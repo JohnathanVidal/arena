@@ -63,7 +63,7 @@ function sxHtml(s){return `<div class='card'><h3>Exportar «${esc(s.name)}»</h3
 function home(){return `<div class="card"><h3>Nueva serie</h3><div class="row"><input id="ns" placeholder="Nombre de la serie" style="flex:1;min-width:180px"><select id="nr" style="width:auto"><option value="1">1 round</option><option value="3" selected>Mejor de 3</option><option value="5">Mejor de 5</option></select><button data-act="newS">Crear</button></div></div>
 ${S.series.length?S.series.map(s=>{const c=champOf(s);return `<div class="card row"><div style="flex:1"><h3 style="margin:0">${esc(s.name)}</h3><span class="mut">${s.fighters.length} peleadores · Temporada ${s.seasons.length}</span> ${c?`<span class="badge">👑 ${esc(fm(s,c)?.name)}</span>`:''}</div><button data-act="open" data-id="${s.id}">Abrir</button><button class="g" data-act="delS" data-id="${s.id}">Papelera</button></div>`}).join(''):'<p class="mut">Aún no tienes series. Crea la primera arriba.</p>'}${trashHtml()}${backupHtml()}`}
 function ser(){const s=cur(),tabs=[['t','Torneo'],['f','Peleadores'],['x','Tablas'],['h','Historial']];
- return `<div class="row"><button class="g" data-act="home">← Series</button><h2 style="margin:0">${esc(s.name)}</h2><button class="g" data-act="sx" style="margin-left:auto">Exportar serie</button></div>${V.sx?sxHtml(s):''}
+ return `<div class="row"><button class="g" data-act="home">← Series</button><h2 style="margin:0">${esc(s.name)}</h2><label class="fbtn" style="margin-left:auto" title="Columnas: Personaje, Arte marcial / Estilo, País, Resumen breve">Importar peleadores<input type="file" accept=".xlsx,.xls,.csv" hidden data-xls="1"></label><button class="g" data-act="sx">Exportar serie</button></div>${V.sx?sxHtml(s):''}
 <div class="tabs">${tabs.map(([k,n])=>`<div class="tab ${V.tab==k?'on':''}" data-act="tab" data-k="${k}">${n}</div>`).join('')}</div>${V.tab=='f'?fighters(s):V.tab=='x'?tables(s):V.tab=='h'?hist(s):tourney(s)}`}
 function fighters(s){const se=last(s),lock=!!se.bracket;
  return `<div class="card row"><label>Nombre <input data-s="name" value="${esc(s.name)}"></label><label>Rounds por pelea <select data-s="rounds">${[1,3,5,7].map(n=>`<option value="${n}" ${s.rounds==n?'selected':''}>${n}</option>`).join('')}</select></label></div>
@@ -120,7 +120,7 @@ delS(t){if(confirm('¿Mover esta serie a la papelera?')){const x=S.series.find(q
   else if(d.series){if(!confirm('Esto reemplaza TODOS los datos actuales. ¿Continuar?'))return;S=d;S.trash=S.trash||[]}
   else throw 0;save();V.bk=null;render()}catch(e){alert('Datos no válidos')}},
  tab(t){V.tab=t.dataset.k;V.fight=null;render()},
- addF(t){const s=cur();for(let i=0;i<+t.dataset.n;i++)s.fighters.push({id:uid(),name:'',img:'',desc:'',style:''});save();render()},
+ addF(t){const s=cur();for(let i=0;i<+t.dataset.n;i++)s.fighters.push({id:uid(),name:'',img:'',desc:'',style:'',country:''});save();render()},
  delF(t){const s=cur();s.fighters=s.fighters.filter(f=>f.id!=t.dataset.id);save();render()},
  start(){build(cur());save();render()},
  go(){V.fight=nextMatch(last(cur()));V.sel=null;V.low=0;render()},
@@ -145,7 +145,7 @@ document.addEventListener('change',e=>{const t=e.target,s=V.sid&&cur();
  else if(t.dataset.xls&&t.files[0]){importXls(s,t.files[0]);t.value=''}else if(t.dataset.imp&&t.files[0]){const r=new FileReader();r.onload=()=>{$('#bk').value=r.result};r.readAsText(t.files[0])}else if(t.dataset.img&&t.files[0]){const f=fm(s,t.dataset.img);status('saving','Subiendo imagen…');uploadFighterImage(t.files[0]).then(u=>{f.img=u;save();render()}).catch(e=>status('error',e.message))}});
 
 // ---- Importar peleadores desde Excel (omite nombres repetidos; país desconocido = sin bandera) ----
-async function importXls(s,file){status('saving','Leyendo Excel…');
+async function importXls(s,file){if(last(s).bracket){alert('La temporada ya empezó: importa peleadores antes de iniciar el torneo (o crea una secuela).');return}status('saving','Leyendo Excel…');
  try{const rows=await parsePeople(file),have=new Set(s.fighters.map(f=>norm(f.name)));let add=0,dup=0,unk=0;
   rows.forEach(r=>{if(have.has(norm(r.name))){dup++;return}have.add(norm(r.name));if(!r.country)unk++;s.fighters.push({id:uid(),name:r.name,img:'',desc:r.desc,style:r.style,country:r.country});add++});
   save();render();alert(`Importados ${add} peleadores`+(dup?`; ${dup} omitidos por nombre repetido`:'')+(unk?`; ${unk} sin país reconocido (sin bandera)`:'')+'.')}
