@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><title>Arena — Torneos de peleas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800;1,900&family=Barlow:wght@400;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/styles.css"></head>
+<body>
+<div id="login" class="gate" hidden><h1>Arena</h1><p class="mut">Torneos de peleas</p><button id="btn-login">Iniciar sesión con Google</button><p id="login-err" class="err"></p></div>
+<div id="loader" class="gate" hidden><div class="spin" id="spin"></div><p id="loader-msg">Cargando…</p><div id="loader-act" class="row" hidden><button id="btn-retry">Reintentar</button><button class="g" id="btn-out">Salir</button></div></div>
+<div id="app" hidden></div><div id="status" class="st" hidden></div>
+<div id="mig" class="ov" hidden><div class="bg"></div><div class="mod"><h3>Datos locales encontrados</h3><p>Se encontraron datos locales. ¿Deseas migrarlos a tu cuenta?</p><div class="row"><button id="mig-yes">Migrar</button><button class="g" id="mig-no">No migrar</button></div></div></div>
+<script type="module" src="js/main.js"></script>
+</body></html>
