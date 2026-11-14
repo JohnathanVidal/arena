@@ -1,10 +1,15 @@
 // Renderizado y eventos de la app (vistas, acciones, listeners). El estado vive aquí; la persistencia en db.js.
 import {last,fm,need,nextMatch,rname,stats,lastMain,podium,sh,needDraw,pct,rankMap,fstats,topOp,champOf,build} from './tournament.js';
 import {sync} from './db.js';
+import {COUNTRIES,countryName,norm} from './countries.js';
+import {parsePeople} from './excel.js';
 import {uploadFighterImage} from './cloudinary.js';
 import {logout as signOutUser} from './auth.js';
 let S={series:[],trash:[]},USER={name:''};export const setData=d=>{S=d};export const getData=()=>S;export const setUser=u=>{USER=u};
 const save=()=>sync(()=>S).then(ch=>{if(ch)render()});
+// Banderas (flagsapi.com); si una bandera no carga se quita sola. Sin país = sin bandera.
+const flagImg=c=>`<img class='flag' src='https://flagsapi.com/${c}/flat/32.png' alt='' loading='lazy' onerror='this.remove()'>`;
+const flag=f=>f&&f.country?flagImg(f.country):'';
 let stT;export function status(kind,msg){const e=$('#status');clearTimeout(stT);e.hidden=false;e.className='st '+kind;e.textContent=kind=='saving'?(msg||'Guardando…'):kind=='saved'?'✓ Guardado':'⚠ '+msg;if(kind=='saved')stT=setTimeout(()=>e.hidden=true,1800)}
 export function resetView(){Object.assign(V,{page:'home',sid:null,tab:'t',fight:null,sel:null,low:0,stat:null,cmp:null,sx:false,bk:null,hs:null,rv:null})}
 const $=s=>document.querySelector(s),uid=()=>Math.random().toString(36).slice(2,9);
@@ -17,18 +22,18 @@ const av=(f,c='',nom)=>{const m=!nom&&f&&MED[f.id],h=av0(f,c);return m?`<span cl
 // Historial: resultados de cualquier temporada ya jugada
 function histTable(s,q){const st=stats(s,q),ids=new Set();q.bracket.forEach(rd=>rd.forEach(m=>{ids.add(m.a);ids.add(m.b)}));
  const r=s.fighters.filter(f=>ids.has(f.id)).map(f=>({f,w:st[f.id].w,l:st[f.id].l})).sort((a,b)=>b.w-a.w||(b.w-b.l)-(a.w-a.l));
- return `<table><tr><th>#</th><th>Peleador</th><th>Pts</th><th>Rounds perdidos</th><th>Dif.</th></tr>${r.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.f.name||'—')} ${x.f.id==q.champ?'<span class="badge">👑 Campeón</span>':''}</td><td><b>${x.w}</b></td><td>${x.l}</td><td>${x.w-x.l}</td></tr>`).join('')}</table>`}
+ return `<table><tr><th>#</th><th>Peleador</th><th>Pts</th><th>Rounds perdidos</th><th>Dif.</th></tr>${r.map((x,i)=>`<tr><td>${i+1}</td><td>${flag(x.f)}${esc(x.f.name||'—')} ${x.f.id==q.champ?'<span class="badge">👑 Campeón</span>':''}</td><td><b>${x.w}</b></td><td>${x.l}</td><td>${x.w-x.l}</td></tr>`).join('')}</table>`}
 function hist(s){const ps=s.seasons.filter(q=>q.bracket);if(!ps.length)return '<p class="mut">Aún no hay temporadas jugadas.</p>';
  const q=ps.find(x=>x.n==V.hs)||ps[ps.length-1],c=fm(s,q.champ);
  return `<div class="row" style="margin-bottom:10px">${ps.map(x=>`<button class="${x.n==q.n?'':'g'}" data-act="hs" data-n="${x.n}">Temporada ${x.n}</button>`).join('')}</div>
-<div class="card"><h3>Temporada ${q.n}${q.champ?'':' (en curso)'}</h3>${c?`<div class="row">${av(c,'sm',1)}<div><span class="badge">👑 Campeón</span> <b>${esc(c.name)}</b></div></div>`:'<p class="mut">Sin campeón todavía.</p>'}</div>
+<div class="card"><h3>Temporada ${q.n}${q.champ?'':' (en curso)'}</h3>${c?`<div class="row">${av(c,'sm',1)}<div><span class="badge">👑 Campeón</span> <b>${flag(c)}${esc(c.name)}</b></div></div>`:'<p class="mut">Sin campeón todavía.</p>'}</div>
 <div class="card"><h3>Llaves</h3>${bracket(s,q)}</div><div class="card"><h3>Tabla final</h3>${histTable(s,q)}</div>`}
 // ---------- Estadísticas de peleadores, comparador y papelera ----------
 const rs=p=>p.res.slice().sort((a,b)=>a.k-b.k).map(x=>`<span style='color:${x.win?'#3ddc84':'#ff4d4d'}'>${x.t}</span>`).join(' · ');
-function opc(s,p,t){const f=fm(s,p.id);return f?`<div class='card row' data-act='stat' data-id='${f.id}' style='cursor:pointer'>${av(f,'md',1)}<div>${t?`<div class='mut'>${t}</div>`:''}<div class='fn' style='font-size:24px'>${esc(f.name)}</div><div>${p.w}-${p.l} en ${p.w+p.l} pelea(s) · ${rs(p)}</div></div></div>`:''}
+function opc(s,p,t){const f=fm(s,p.id);return f?`<div class='card row' data-act='stat' data-id='${f.id}' style='cursor:pointer'>${av(f,'md',1)}<div>${t?`<div class='mut'>${t}</div>`:''}<div class='fn' style='font-size:24px'>${flag(f)}${esc(f.name)}</div><div>${p.w}-${p.l} en ${p.w+p.l} pelea(s) · ${rs(p)}</div></div></div>`:''}
 const ring=(w,l)=>{const p=w+l?100*w/(w+l):0;return `<div class='ring' style='background:${w+l?`conic-gradient(#3ddc84 0 ${p}%,#ff4d4d 0)`:'#2a3350'}'><i><b>${w+l?Math.round(p)+'%':'–'}</b></i></div>`};
 function detail(s,f,X,RK){const bw=topOp(X.op,'w','kw'),bl=topOp(X.op,'l','kl'),ops=Object.values(X.op).filter(p=>fm(s,p.id)).sort((a,b)=>(b.w+b.l)-(a.w+a.l)||Math.max(b.kw,b.kl)-Math.max(a.kw,a.kl));
- return `<div class='row'>${av(f,'md',1)}<div><h2 style='margin:0'>${esc(f.name)}</h2><div class='sty fn'>${esc(f.style||'Sin estilo')}</div><div class='mut'>Posición en la tabla general: <b>${RK[f.id]}</b></div></div></div>
+ return `<div class='row'>${av(f,'md',1)}<div><h2 style='margin:0'>${flag(f)}${esc(f.name)}</h2><div class='sty fn'>${esc(f.style||'Sin estilo')}</div><div class='mut'>Posición en la tabla general: <b>${RK[f.id]}</b></div></div></div>
 <div class='row' style='margin:14px 0'>${ring(X.rw,X.rl)}<div><div><b>${X.f}</b> peleas (con play-offs): <span style='color:#3ddc84'>${X.w} G</span> · <span style='color:#ff4d4d'>${X.l} P</span> (${pct(X.w,X.l)}% victorias)</div><div>Rounds: <span style='color:#3ddc84'>${X.rw} ganados</span> · <span style='color:#ff4d4d'>${X.rl} perdidos</span></div></div></div>
 ${bw?opc(s,bw,'Víctima favorita'):''}${bl?opc(s,bl,'Mayor rival'):''}
 <h3>Rivales enfrentados</h3>${ops.length?ops.map(p=>opc(s,p,'')).join(''):'<p class="mut">Aún sin peleas.</p>'}
@@ -44,7 +49,7 @@ function cmpView(s,a,b){const A=fstats(s,a.id),B=fstats(s,b.id),n=need(s),h=A.op
   why.push(hf?`cara a cara: ${h.w}-${h.l} para ${esc(a.name)}`:'nunca se han enfrentado: pesa solo su historial general')}
  const row=(l,x,y)=>`<tr><td>${x}</td><th style='text-align:center'>${l}</th><td style='text-align:right'>${y}</td></tr>`,dp=X=>(X.f?(X.rw-X.rl)/X.f:0).toFixed(1);
  return `<button class='g' data-act='cmpOff'>← Volver</button>
-<div class='stage' style='margin:8px 0'><div class='side'>${av(a,'md',1)}<span class='fn'>${esc(a.name)}</span></div><div class='vs'>VS</div><div class='side'>${av(b,'md',1)}<span class='fn'>${esc(b.name)}</span></div></div>
+<div class='stage' style='margin:8px 0'><div class='side'>${av(a,'md',1)}<span class='fn'>${flag(a)}${esc(a.name)}</span></div><div class='vs'>VS</div><div class='side'>${av(b,'md',1)}<span class='fn'>${flag(b)}${esc(b.name)}</span></div></div>
 <table>${row('Peleas',A.f,B.f)}${row('% victorias',pct(A.w,A.l)+'%',pct(B.w,B.l)+'%')}${row('Rounds G/P',A.rw+'/'+A.rl,B.rw+'/'+B.rl)}${row('Dif. por pelea',dp(A),dp(B))}${row('Cara a cara',h.w,h.l)}</table>
 <div class='card' style='margin-top:12px;border-left:4px solid var(--gold)'><h3 style='margin:0'>🏆 ${A.f+B.f?esc(w.name)+' ('+Math.round(pw*100)+'%, '+conf+')':'Sin favorito'}</h3>${A.f+B.f?`<p>Resultado probable: <b>${n}-${lo}</b> a favor de ${esc(w.name)}.</p>`:''}<ul>${why.map(x=>`<li>${x}</li>`).join('')}</ul></div>`}
 function modal(s){const f=fm(s,V.stat);if(!f)return '';const o=V.cmp&&fm(s,V.cmp)?cmpView(s,f,fm(s,V.cmp)):detail(s,f,fstats(s,f.id),rankMap(s,last(s)));
@@ -63,15 +68,15 @@ function ser(){const s=cur(),tabs=[['t','Torneo'],['f','Peleadores'],['x','Tabla
 function fighters(s){const se=last(s),lock=!!se.bracket;
  return `<div class="card row"><label>Nombre <input data-s="name" value="${esc(s.name)}"></label><label>Rounds por pelea <select data-s="rounds">${[1,3,5,7].map(n=>`<option value="${n}" ${s.rounds==n?'selected':''}>${n}</option>`).join('')}</select></label></div>
 <datalist id="st">${['Agresivo','Defensivo','Equilibrado','Contraataque','Presión','Técnico'].map(x=>`<option>${x}</option>`).join('')}</datalist>
-${s.fighters.map(f=>`<div class="card frow"><label style="cursor:pointer">${av(f)}<input type="file" accept="image/*" hidden data-img="${f.id}"></label><div class="f"><input data-f="name" data-id="${f.id}" placeholder="Nombre" value="${esc(f.name)}"><input data-f="style" data-id="${f.id}" list="st" placeholder="Estilo de pelea" value="${esc(f.style)}"><textarea data-f="desc" data-id="${f.id}" rows="2" placeholder="Descripción / contexto">${esc(f.desc)}</textarea>${lock?'':`<button class="g" data-act="delF" data-id="${f.id}">Quitar</button>`}</div></div>`).join('')}
-${lock?'<p class="mut">La temporada ya empezó: puedes editar datos, no la cantidad de peleadores.</p>':`<div class="row"><button data-act="addF" data-n="1">+ Peleador</button><button class="g" data-act="addF" data-n="4">+4</button><span class="mut">${s.fighters.length} (mínimo 3; si no son 4, 8, 16, 32… se juegan play-offs)</span></div>`}`}
+${s.fighters.map(f=>`<div class="card frow"><label style="cursor:pointer">${av(f)}<input type="file" accept="image/*" hidden data-img="${f.id}"></label><div class="f"><input data-f="name" data-id="${f.id}" placeholder="Nombre" value="${esc(f.name)}"><div class='cb'>${flag(f)}<input class='cb-in' data-id='${f.id}' placeholder='País (escribe para filtrar)' value='${esc(countryName(f.country))}' autocomplete='off'><div class='cb-list' hidden></div></div><input data-f="style" data-id="${f.id}" list="st" placeholder="Estilo de pelea" value="${esc(f.style)}"><textarea data-f="desc" data-id="${f.id}" rows="2" placeholder="Descripción / contexto">${esc(f.desc)}</textarea>${lock?'':`<button class="g" data-act="delF" data-id="${f.id}">Quitar</button>`}</div></div>`).join('')}
+${lock?'<p class="mut">La temporada ya empezó: puedes editar datos, no la cantidad de peleadores.</p>':`<div class="row"><label class="fbtn" title="Columnas: Personaje, Arte marcial / Estilo, País, Resumen breve">Importar desde Excel<input type="file" accept=".xlsx,.xls,.csv" hidden data-xls="1"></label><button data-act="addF" data-n="1">+ Peleador</button><button class="g" data-act="addF" data-n="4">+4</button><span class="mut">${s.fighters.length} (mínimo 3; si no son 4, 8, 16, 32… se juegan play-offs)</span></div>`}`}
 function tourney(s){const se=last(s);
  if(!se.bracket){const n=s.fighters.length,ok=n>=3&&s.fighters.every(f=>f.name);let P=1;while(P*2<=n)P*=2;return `<div class="card"><h3>Temporada ${se.n}</h3><p>${ok?(n>P?`${n} peleadores: ${n-P} play-off(s) entre los ${2*(n-P)} peor ubicados en la tabla general; cuadro principal de ${P} (la primera ronda se sortea al terminar los play-offs).`:`Cuadro de ${P} con emparejamiento aleatorio.`):'Necesitas al menos 3 peleadores, todos con nombre.'}</p><button data-act="start" ${ok?'':'disabled'}>Iniciar torneo</button></div>`}
  if(V.fight)return fight(s,se);const nm=nextMatch(se),c=se.champ&&fm(s,se.champ);
- return (c?`<div class="card champ"><div class="crown">👑</div>${av(c,'',1)}<h2>${esc(c.name)}</h2><p>Campeón de la temporada ${se.n}</p><button data-act="seq">Crear secuela</button></div>`:needDraw(se)?`<button data-act="draw" style="margin-bottom:12px" ${V.rv!=null?'disabled':''}>🎲 Sortear primera ronda</button>`:`<button data-act="go" style="margin-bottom:12px" ${V.rv!=null?'disabled':''}>Siguiente pelea</button>`)+bracket(s,se)}
-function bracket(s,se){const T=se.bracket.length;return `<div class="br">${se.bracket.map((rd,r)=>`<div class="col"><h4>${rname(r,se)}</h4>${rd.map((m,mi)=>`<div class="m ${V.rv!=null&&se.po&&r==1&&mi==V.rv-1?'new':''}">${[['a','sa'],['b','sb']].map(([k,sc])=>{const f=V.rv!=null&&se.po&&r==1&&mi>=V.rv?null:fm(s,m[k]);return `<div class="${m.w&&m.w==m[k]?'w':''}">${f?av(f,'sm'):''}<span class="n">${f?esc(f.name):'—'}</span><span>${m.w?m[sc]:''}</span></div>`}).join('')}</div>`).join('')}</div>`).join('')}</div>`}
+ return (c?`<div class="card champ"><div class="crown">👑</div>${av(c,'',1)}<h2>${flag(c)}${esc(c.name)}</h2><p>Campeón de la temporada ${se.n}</p><button data-act="seq">Crear secuela</button></div>`:needDraw(se)?`<button data-act="draw" style="margin-bottom:12px" ${V.rv!=null?'disabled':''}>🎲 Sortear primera ronda</button>`:`<button data-act="go" style="margin-bottom:12px" ${V.rv!=null?'disabled':''}>Siguiente pelea</button>`)+bracket(s,se)}
+function bracket(s,se){const T=se.bracket.length;return `<div class="br">${se.bracket.map((rd,r)=>`<div class="col"><h4>${rname(r,se)}</h4>${rd.map((m,mi)=>`<div class="m ${V.rv!=null&&se.po&&r==1&&mi==V.rv-1?'new':''}">${[['a','sa'],['b','sb']].map(([k,sc])=>{const f=V.rv!=null&&se.po&&r==1&&mi>=V.rv?null:fm(s,m[k]);return `<div class="${m.w&&m.w==m[k]?'w':''}">${f?av(f,'sm'):''}<span class="n">${f?flag(f)+esc(f.name):'—'}</span><span>${m.w?m[sc]:''}</span></div>`}).join('')}</div>`).join('')}</div>`).join('')}</div>`}
 function fight(s,se){const RK=rankMap(s,se),m=se.bracket[V.fight.r][V.fight.i],A=fm(s,m.a),B=fm(s,m.b),n=need(s);
- const side=(f,k)=>`<div class="side ${V.sel==k?'win':''}" data-act="pick" data-k="${k}"><div class="pw">${av(f,'xl')}<span class="pos" data-act="stat" data-id="${f.id}" title="Ver estadísticas">${RK[f.id]}</span></div><span class="fn">${esc(f.name)}</span></div>`;
+ const side=(f,k)=>`<div class="side ${V.sel==k?'win':''}" data-act="pick" data-k="${k}"><div class="pw">${av(f,'xl')}<span class="pos" data-act="stat" data-id="${f.id}" title="Ver estadísticas">${RK[f.id]}</span></div><span class="fn">${flag(f)}${esc(f.name)}</span></div>`;
  const pn=f=>`<div class="card"><div class="fn sty">${esc(f.style||'Sin estilo')}</div><p>${esc(f.desc||'Sin descripción.')}</p></div>`;
  return `<div class="row"><button class="g" data-act="back">← Llaves</button><h3 style="margin:0">${rname(V.fight.r,se)} · a ${n} rounds</h3></div>
 <div class="stage" key="${V.fight.r}-${V.fight.i}">${side(A,'a')}<div class="vs">VS</div>${side(B,'b')}</div>
@@ -87,12 +92,13 @@ function tables(s){const se=last(s),ch=champOf(s),st=stats(s,se);
  prS=s.fighters.map(f=>({f,w:ps[f.id].w,p:ps[f.id].w,d:ps[f.id].w-ps[f.id].l})).sort((a,b)=>b.p-a.p||b.d-a.d||b.w-a.w).map(r=>r.f.id),
  prG=s.fighters.map(f=>{let t=0,p=0,d=0;s.seasons.forEach(q=>{const x=stats(s,q,q===se?lm:null)[f.id];t+=x.t;p+=x.w;d+=x.w-x.l});return{f,t,p,d}}).sort((a,b)=>b.p-a.p||b.d-a.d||b.t-a.t).map(r=>r.f.id),
  mv=(id,i,pr)=>{const j=pr.indexOf(id);return !lm||j==i?'<span style="color:#8a94b2">–</span>':j>i?'<span style="color:#3ddc84">▲</span>':'<span style="color:#ff4d4d">▼</span>'};
- const nm=f=>`${esc(f.name||'—')} ${f.id==ch?'<span class="badge">👑 Campeón</span>':''}`;
+ const nm=f=>`${flag(f)}${esc(f.name||'—')} ${f.id==ch?'<span class="badge">👑 Campeón</span>':''}`;
  return `<div class="card"><h3>Temporada ${se.n}</h3>${se.bracket?`<table><tr><th>#</th><th>Peleador</th><th>Pts</th><th>Rounds perdidos</th><th>Dif.</th></tr>${sr.map((r,i)=>`<tr><td>${i+1} ${mv(r.f.id,i,prS)}</td><td>${nm(r.f)}</td><td><b>${r.p}</b></td><td>${r.l}</td><td>${r.d}</td></tr>`).join('')}</table>`:'<p class="mut">Aún no empieza.</p>'}</div>
 <div class="card"><h3>Tabla general</h3><table><tr><th>#</th><th>Peleador</th><th>Pts</th><th>Títulos</th><th>Dif. total</th></tr>${gen.map((r,i)=>`<tr><td>${i+1} ${mv(r.f.id,i,prG)}</td><td>${nm(r.f)}</td><td><b>${r.p}</b></td><td>${r.t}</td><td>${r.d}</td></tr>`).join('')}</table></div>`}
 // ---------- Acciones ----------
 const A={
  logout(){signOutUser()},
+ pickC(t){const f=fm(cur(),t.dataset.id);if(f){f.country=t.dataset.code;save();render()}},
  home(){V.page='home';V.fight=null;V.stat=null;V.cmp=null;render()},
  newS(){const n=$('#ns').value.trim();if(!n)return $('#ns').focus();S.series.push({id:uid(),ts:Date.now(),name:n,rounds:+$('#nr').value,fighters:[],seasons:[{n:1,bracket:null,champ:null}]});save();render()},
  open(t){V.sid=t.dataset.id;V.sx=false;V.stat=null;V.cmp=null;V.page='s';V.tab='t';V.fight=null;render()},
@@ -136,4 +142,18 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(
 document.addEventListener('change',e=>{const t=e.target,s=V.sid&&cur();
  if(t.dataset.f){fm(s,t.dataset.id)[t.dataset.f]=t.value;save()}
  else if(t.dataset.s){s[t.dataset.s]=t.dataset.s=='rounds'?+t.value:t.value;save()}
- else if(t.dataset.imp&&t.files[0]){const r=new FileReader();r.onload=()=>{$('#bk').value=r.result};r.readAsText(t.files[0])}else if(t.dataset.img&&t.files[0]){const f=fm(s,t.dataset.img);status('saving','Subiendo imagen…');uploadFighterImage(t.files[0]).then(u=>{f.img=u;save();render()}).catch(e=>status('error',e.message))}});
+ else if(t.dataset.xls&&t.files[0]){importXls(s,t.files[0]);t.value=''}else if(t.dataset.imp&&t.files[0]){const r=new FileReader();r.onload=()=>{$('#bk').value=r.result};r.readAsText(t.files[0])}else if(t.dataset.img&&t.files[0]){const f=fm(s,t.dataset.img);status('saving','Subiendo imagen…');uploadFighterImage(t.files[0]).then(u=>{f.img=u;save();render()}).catch(e=>status('error',e.message))}});
+
+// ---- Importar peleadores desde Excel (omite nombres repetidos; país desconocido = sin bandera) ----
+async function importXls(s,file){status('saving','Leyendo Excel…');
+ try{const rows=await parsePeople(file),have=new Set(s.fighters.map(f=>norm(f.name)));let add=0,dup=0,unk=0;
+  rows.forEach(r=>{if(have.has(norm(r.name))){dup++;return}have.add(norm(r.name));if(!r.country)unk++;s.fighters.push({id:uid(),name:r.name,img:'',desc:r.desc,style:r.style,country:r.country});add++});
+  save();render();alert(`Importados ${add} peleadores`+(dup?`; ${dup} omitidos por nombre repetido`:'')+(unk?`; ${unk} sin país reconocido (sin bandera)`:'')+'.')}
+ catch(e){console.error(e);status('error','No se pudo leer el Excel: '+e.message)}}
+// ---- Desplegable de país con filtrado mientras se escribe ----
+function cbOpen(inp,filter){const l=inp.parentElement.querySelector('.cb-list'),q=filter?norm(inp.value):'',id=inp.dataset.id,o=(c,n,f)=>`<div class='cb-o' data-act='pickC' data-id='${id}' data-code='${c}'>${f}${esc(n)}</div>`;
+ const items=COUNTRIES.filter(c=>!q||norm(c.name).includes(q)).map(c=>o(c.code,c.name,flagImg(c.code)));
+ l.innerHTML=(!q||'desconocido'.includes(q)?o('','Desconocido (sin bandera)',''):'')+(items.join('')||(q&&!'desconocido'.includes(q)?"<div class='cb-o mut'>Sin resultados</div>":''));l.hidden=false}
+document.addEventListener('focusin',e=>{if(e.target.classList&&e.target.classList.contains('cb-in')){e.target.select();cbOpen(e.target,false)}});
+document.addEventListener('input',e=>{if(e.target.classList&&e.target.classList.contains('cb-in'))cbOpen(e.target,true)});
+document.addEventListener('click',e=>{if(!e.target.closest('.cb'))document.querySelectorAll('.cb-list').forEach(l=>l.hidden=true)});

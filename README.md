@@ -43,6 +43,10 @@ firebase deploy --only hosting
 ```
 (En `firebase.json` añade `"ignore": ["README.md", "firebase.json", "**/.*"]` si no quieres publicar el README.)
 
+## Importar peleadores desde Excel y países
+- En **Peleadores** (antes de iniciar la temporada) pulsa **Importar desde Excel** (.xlsx/.xls/.csv). Columnas: `Personaje | Arte marcial / Estilo | País | Resumen breve`. Se omiten nombres repetidos y los países no reconocidos quedan sin bandera.
+- Cada peleador tiene un desplegable de **País** (todos los países del mundo) que se filtra al escribir; "Desconocido" no muestra bandera. Banderas de flagsapi.com, guardadas como código ISO (`JP`, `US`…).
+
 ## Migración y copias
 - Al iniciar sesión, si hay datos antiguos en `localStorage` aparece un aviso para migrarlos (solo si aceptas; las fotos en base64 se suben a Cloudinary). Después localStorage ya no se usa.
 - Si los datos viven en otro dominio (p. ej. la versión anterior), usa allí **Exportar todo / Exportar serie** y aquí **Copia de seguridad → Importar datos**.
