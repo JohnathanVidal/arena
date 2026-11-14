@@ -1,6 +1,6 @@
 // Autenticación: solo Google Sign-In.
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { auth } from './firebase-config.js';
+import { auth } from './firebase-config.js?v=3';
 
 const provider = new GoogleAuthProvider();
 

@@ -1,5 +1,5 @@
 // Importación de peleadores desde Excel. Columnas: Personaje | Arte marcial / Estilo | País | Resumen breve
-import { findCode, norm } from './countries.js';
+import { findCode, norm } from './countries.js?v=3';
 
 // Convierte filas (array de arrays) en peleadores. Detecta columnas por su encabezado; si no hay, usa el orden A-D.
 export function rowsToPeople(rows) {

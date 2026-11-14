@@ -1,10 +1,10 @@
 // Renderizado y eventos de la app (vistas, acciones, listeners). El estado vive aquí; la persistencia en db.js.
-import {last,fm,need,nextMatch,rname,stats,lastMain,podium,sh,needDraw,pct,rankMap,fstats,topOp,champOf,build} from './tournament.js';
-import {sync} from './db.js';
-import {COUNTRIES,countryName,norm} from './countries.js';
-import {parsePeople} from './excel.js';
-import {uploadFighterImage} from './cloudinary.js';
-import {logout as signOutUser} from './auth.js';
+import {last,fm,need,nextMatch,rname,stats,lastMain,podium,sh,needDraw,pct,rankMap,fstats,topOp,champOf,build} from './tournament.js?v=3';
+import {sync} from './db.js?v=3';
+import {COUNTRIES,countryName,norm} from './countries.js?v=3';
+import {parsePeople} from './excel.js?v=3';
+import {uploadFighterImage} from './cloudinary.js?v=3';
+import {logout as signOutUser} from './auth.js?v=3';
 let S={series:[],trash:[]},USER={name:''};export const setData=d=>{S=d};export const getData=()=>S;export const setUser=u=>{USER=u};
 const save=()=>sync(()=>S).then(ch=>{if(ch)render()});
 // Banderas (flagsapi.com); si una bandera no carga se quita sola. Sin país = sin bandera.
@@ -82,7 +82,7 @@ function fight(s,se){const RK=rankMap(s,se),m=se.bracket[V.fight.r][V.fight.i],A
 <div class="stage" key="${V.fight.r}-${V.fight.i}">${side(A,'a')}<div class="vs">VS</div>${side(B,'b')}</div>
 ${V.sel?`<div class="info"><div><h4>${esc(A.name)}</h4>${pn(A)}</div><div><h4>${esc(B.name)}</h4>${pn(B)}</div></div>
 <div class="card row"><span>Rounds del perdedor:</span>${Array.from({length:n},(_,i)=>`<button class="${V.low==i?'':'g'}" data-act="low" data-n="${i}">${i}</button>`).join('')}<button data-act="ok" style="margin-left:auto">Confirmar ganador</button></div>`:'<p class="mut" style="text-align:center">Toca a quien gana la pelea.</p>'}`}
-export function render(){MED=V.page=='s'&&V.tab!='f'&&V.tab!='h'?podium(cur()):{};let h;if(V.page=='home')h=home();else h=ser();$('#app').innerHTML=`<header><h1 data-act="home">Arena</h1><span class="mut who">${esc(USER.name)}</span><button class="g" data-act="logout">Salir</button></header>`+h+(V.stat&&V.page=='s'&&cur()?modal(cur()):'');
+export function render(){MED=V.page=='s'&&V.tab!='f'&&V.tab!='h'?podium(cur()):{};let h;if(V.page=='home')h=home();else h=ser();$('#app').innerHTML=`<header><h1 data-act="home">Arena</h1><span class="mut who">${esc(USER.name)} · v3</span><button class="g" data-act="logout">Salir</button></header>`+h+(V.stat&&V.page=='s'&&cur()?modal(cur()):'');
  // Tabla de temporada: añadir columnas de rounds
  }
 function tables(s){const se=last(s),ch=champOf(s),st=stats(s,se);

@@ -1,7 +1,7 @@
 // Punto de entrada: control de sesión, carga de datos, migración y arranque de la UI.
-import { onUser, loginGoogle, logout, friendlyAuthError } from './auth.js';
-import { loadAll, resetSnapshot, setReporter, sync, readLocal, wasMigrated, markMigrated } from './db.js';
-import { setData, getData, setUser, render, resetView, status } from './ui.js';
+import { onUser, loginGoogle, logout, friendlyAuthError } from './auth.js?v=3';
+import { loadAll, resetSnapshot, setReporter, sync, readLocal, wasMigrated, markMigrated } from './db.js?v=3';
+import { setData, getData, setUser, render, resetView, status } from './ui.js?v=3';
 
 const $ = id => document.getElementById(id);
 const show = w => ['login', 'loader', 'app'].forEach(k => { $(k).hidden = k !== w; });

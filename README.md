@@ -51,3 +51,8 @@ firebase deploy --only hosting
 - Al iniciar sesión, si hay datos antiguos en `localStorage` aparece un aviso para migrarlos (solo si aceptas; las fotos en base64 se suben a Cloudinary). Después localStorage ya no se usa.
 - Si los datos viven en otro dominio (p. ej. la versión anterior), usa allí **Exportar todo / Exportar serie** y aquí **Copia de seguridad → Importar datos**.
 - Errores de red: aparece un aviso "Toca para reintentar" abajo a la derecha.
+
+## Si GitHub Pages no muestra los cambios
+- Pages tarda 1–10 min en publicar y el navegador cachea los módulos JS: espera a que el despliegue termine (pestaña *Actions*) y recarga con `Ctrl+Shift+R`.
+- Cada cambio de código debería subir el número de versión (`?v=3` en `index.html` y en los `import` de `js/*.js`) para forzar la descarga. La versión cargada se ve junto a tu nombre, arriba a la derecha (`· v3`).
+- Verifica que `index.html` y la carpeta `js/` estén en la **raíz** del repo (o en la carpeta que Pages publica), no dentro de una subcarpeta `arena-app/`.

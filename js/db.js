@@ -1,8 +1,8 @@
 // Persistencia en Firestore: users/{uid}/series/{id} y users/{uid}/trash/{id}.
 // save() de la UI llama a sync(): compara contra lo ya guardado y escribe/borra solo lo que cambió.
 import { collection, doc, getDocs, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
-import { db } from './firebase-config.js';
-import { ensureCloudImages } from './cloudinary.js';
+import { db } from './firebase-config.js?v=3';
+import { ensureCloudImages } from './cloudinary.js?v=3';
 
 let uid = null, report = () => {}, chain = Promise.resolve();
 const snap = { series: new Map(), trash: new Map() };   // id -> JSON guardado
