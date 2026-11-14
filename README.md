@@ -8,7 +8,7 @@ index.html · css/styles.css · js/{firebase-config,auth,db,cloudinary,tournamen
 - `tournament.js`: lógica pura (llaves, play-offs, tablas, estadísticas, comparador). `ui.js`: vistas y eventos. `db.js`: Firestore. `cloudinary.js`: fotos.
 
 ## 1. Habilitar Google en Firebase (proyecto `arena-79185`)
-1. Consola de Firebase → **Authentication** → *Get started* → pestaña **Sign-in method** → **Google** → Enable → elige email de soporte → Save.
+1. Consola de Firebase → **Authentication** → pulsa **Get started** (obligatorio: sin esto Firebase responde `CONFIGURATION_NOT_FOUND`) → pestaña **Sign-in method** → **Google** → Enable → elige email de soporte → Save.
 2. **Authentication → Settings → Authorized domains**: `localhost` ya viene; añade tu dominio de Hosting (`arena-79185.web.app` y `arena-79185.firebaseapp.com` suelen estar) y cualquier dominio propio.
 3. **Firestore Database** → *Create database* (modo producción).
 

@@ -18,6 +18,7 @@ export const onUser = cb => onAuthStateChanged(auth, cb);
 export function friendlyAuthError(e) {
   return ({
     'auth/unauthorized-domain': 'Este dominio no está autorizado en Firebase Authentication (Settings → Authorized domains).',
+    'auth/configuration-not-found': 'Firebase Authentication aún no está activado en el proyecto: en la consola entra a Authentication → Get started y habilita el proveedor Google.',
     'auth/operation-not-allowed': 'El acceso con Google no está habilitado en Firebase Authentication.',
     'auth/network-request-failed': 'Error de red. Revisa tu conexión e inténtalo de nuevo.'
   })[e.code] || ('No se pudo iniciar sesión: ' + (e.message || e.code));
